@@ -12,7 +12,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "License :: OSI Approved :: MIT License",
 ]
-name = "test_plugin"
+name = "bachmann_hdf5_plugin"
 description = "Nomad example template"
 version = "0.1.0"
 readme = "README.md"
@@ -30,7 +30,7 @@ dependencies = [
 ]
 
 [project.urls]
-Repository = "https://github.com/ccc3001/test_plugin"
+Repository = "https://github.com/ccc3001/bachmann_hdf5_plugin"
 
 [project.optional-dependencies]
 dev = ["ruff", "pytest", "structlog"]
@@ -110,8 +110,8 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [project.entry-points.'nomad.plugin']
-parser_entry_point = "test_plugin.parsers:parser_entry_point"
-schema_package_entry_point = "test_plugin.schema_packages:schema_package_entry_point"
+parser_entry_point = "bachmann_hdf5_plugin.parsers:parser_entry_point"
+schema_package_entry_point = "bachmann_hdf5_plugin.schema_packages:schema_package_entry_point"
 [tool.cruft]
 # Avoid updating workflow files, this leads to permissions issues
 skip = [".github/*"]

@@ -2,7 +2,7 @@ import logging
 
 from nomad.datamodel import EntryArchive
 
-from test_plugin.parsers.parser import NewParser
+from bachmann_hdf5_plugin.parsers.parser import NewParser
 
 
 def test_parse_file():

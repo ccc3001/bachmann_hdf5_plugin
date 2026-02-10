@@ -6,7 +6,7 @@ class NewSchemaPackageEntryPoint(SchemaPackageEntryPoint):
     parameter: int = Field(0, description='Custom configuration parameter')
 
     def load(self):
-        from test_plugin.schema_packages.schema_package import m_package
+        from bachmann_hdf5_plugin.schema_packages.schema_package import m_package
 
         return m_package
 

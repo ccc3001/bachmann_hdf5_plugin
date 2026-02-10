@@ -1,8 +1,8 @@
-site_name: test_plugin
+site_name: bachmann_hdf5_plugin
 site_description: Nomad example template
 site_author: ccc3001
 
-repo_url: https://github.com/ccc3001/test_plugin
+repo_url: https://github.com/ccc3001/bachmann_hdf5_plugin
 edit_uri: ""
 
 nav:

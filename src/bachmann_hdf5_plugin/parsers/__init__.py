@@ -6,7 +6,7 @@ class NewParserEntryPoint(ParserEntryPoint):
     parameter: int = Field(0, description='Custom configuration parameter')
 
     def load(self):
-        from test_plugin.parsers.parser import NewParser
+        from bachmann_hdf5_plugin.parsers.parser import NewParser
 
         return NewParser(**self.model_dump())
 

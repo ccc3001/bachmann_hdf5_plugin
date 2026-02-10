@@ -1,2 +1,2 @@
 recursive-include * nomad_plugin.yaml
-graft src/test_plugin/example_uploads
+graft src/bachmann_hdf5_plugin/example_uploads
