@@ -126,6 +126,12 @@ class NewParser(MatchingParser):
                         data_item.data=flat_values[0,start_point:(start_point-1+var_lengths[0,counter])]
                         data_item.time=flat_timestamps[0,start_point:(start_point-1+var_lengths[0,counter])]
                         data_item.name= var_name
+                        if not hasattr(nomadcamelsdatahandler_data, 'start_time') or  nomadcamelsdatahandler_data.start_time is None or    nomadcamelsdatahandler_data.start_time >= data_item.time[0]:
+
+                            nomadcamelsdatahandler_data.start_time = data_item.time[0]
+                        if not hasattr(nomadcamelsdatahandler_data, 'end_time') or  nomadcamelsdatahandler_data.end_time is None or nomadcamelsdatahandler_data.start_time <= data_item.time[len(data_item.time)-1]:
+                           nomadcamelsdatahandler_data.end_time= data_item.time[len(data_item.time)-1]
+
                     start_point+=var_lengths[0,counter]
                     counter+=1
 

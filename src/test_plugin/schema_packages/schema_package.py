@@ -505,7 +505,8 @@ class Undefined_data(ArchiveSection):
 
 class NomadCamelsDataHandler_data(ArchiveSection):
   data=SubSection(section=SectionProxy("Ploted_values"), repeats = True)
-
+  start_time=Quantity(type=np.float64)
+  end_time=Quantity(type=np.float64)
 
 # Define your schema class
 class NewSchemaPackage(ArchiveSection):
@@ -606,7 +607,7 @@ class NewSchemaPackage(ArchiveSection):
             margin: 0;
             padding: 0;
         }}
-        
+
         .quick_event_bar{{
           display: flex;
             align-items: center;       /* vertically center */
@@ -623,7 +624,7 @@ class NewSchemaPackage(ArchiveSection):
             text-align: end;
             padding-right: 10px;
         }}
-        
+
         .border {{
             margin-right: 10%;
             margin-left: 5%;
@@ -631,13 +632,13 @@ class NewSchemaPackage(ArchiveSection):
             padding-right:5%;
             padding-top:5px;
             padding-bottom: 5px;
-            border: 1px solid #e5e7eb;       
-            border-radius: 12px;             
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;  
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05) !important;
             background: #fff;
         }}
         .quick_info {{
-          border-radius: 2px; 
+          border-radius: 2px;
           margin-left:5% ;
           margin-right:5% ;
           margin-bottom:10px ;
@@ -664,7 +665,7 @@ class NewSchemaPackage(ArchiveSection):
         }}
         .plotly-graph-div {{
           page-break-inside: avoid;
-          break-inside: avoid; 
+          break-inside: avoid;
 
         }}
         table {{
@@ -673,7 +674,7 @@ class NewSchemaPackage(ArchiveSection):
           text-align: center;
           page-break-inside: avoid;
           break-inside: avoid;
-        
+
         }}
         th, td {{
 
@@ -693,18 +694,18 @@ class NewSchemaPackage(ArchiveSection):
           background-color: lightgray;
         }}
         .second-header-cell{{
-          background-color: whitesmoke; 
+          background-color: whitesmoke;
 
         }}
         .second-header-cell-left{{
-          background-color: whitesmoke; 
+          background-color: whitesmoke;
         }}
         .inactive-cell{{
           background-color: white;
           border:0px white;
         }}
         .active-cell{{
-          
+
         }}
     </style>
     <style>
@@ -723,7 +724,7 @@ button.print-button {{
   position: relative;
   padding: 0;
   border: 0;
-  
+
   border: none;
   background: transparent;
 }}
@@ -735,7 +736,7 @@ span.print-icon, span.print-icon::before, span.print-icon::after, button.print-b
 
 span.print-icon {{
   position: relative;
-  display: inline-block;  
+  display: inline-block;
   padding: 0;
   margin-top: 20%;
 
@@ -809,7 +810,7 @@ button.print-button:hover .print-icon::after {{
   <div class="info1" >
     Researcher: {self.first_name} {self.last_name}
   </div>
-  <div class="info2"> 
+  <div class="info2">
     Date: {self.date}
   </div>
 </div>
@@ -817,8 +818,8 @@ button.print-button:hover .print-icon::after {{
   <div class="info1" >
     Email:{self.email}
   </div>
-  <div class="info2"> 
-    Institute: {self.affiliation}    
+  <div class="info2">
+    Institute: {self.affiliation}
   </div>
 </div>
 <h2>Protocol description:</h2>
@@ -845,7 +846,7 @@ button.print-button:hover .print-icon::after {{
     document.addEventListener("DOMContentLoaded", () => {{
       let printLink = document.getElementById("print");
       let container = document.getElementById("container");
-  
+
       printLink.addEventListener("click", event => {{
           event.preventDefault();
           printLink.style.visibility = "hidden";
@@ -855,7 +856,7 @@ button.print-button:hover .print-icon::after {{
   }}, false);
   </script>
 </body>
-</html> 
+</html>
 """
 
     def normalize(self, archive:'EntryArchive',logger:'BoundLogger')-> None:
