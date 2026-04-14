@@ -207,16 +207,20 @@ button.print-button:hover .print-icon::before {
 class Ploted_values(PlotSection,ArchiveSection):
     data=Quantity(type=np.float64,shape =['*'])
     name=Quantity(type=  str)
-
+    time=Quantity(type=np.float64,shape =['*'])
 
 
     def normalize(self, archive, logger):
       super(Ploted_values, self).normalize(archive, logger)
-      if self.data is None or len(self.data) == 0:
+      if not hasattr(self, 'data') or self.data is None or len(self.data) == 0:
         return 0
         #self.append(self.generate_scan_plot())
-      figure1= px.line(x=self.m_parent.m_parent.elapsed_time, y=self.data, title="")
-      self.figures.append(PlotlyFigure(label='figure', figure=figure1.to_plotly_json()))
+      if not hasattr(self, 'time') or self.time is None or len(self.time)==0:
+        figure1= px.line(x=self.m_parent.m_parent.elapsed_time, y=self.data, title="")
+        self.figures.append(PlotlyFigure(label='figure', figure=figure1.to_plotly_json()))
+      else:
+        figure1= px.line(x=self.time-self.m_parent.start_time, y=self.data, title="")
+        self.figures.append(PlotlyFigure(label='figure', figure=figure1.to_plotly_json()))
       #try:
       #  figure2 = go.Figure()
       #  figure2.add_trace(go.Box( y=self.data, quartilemethod="linear", name=  "" ))
@@ -494,8 +498,12 @@ class HP_CANData(ArchiveSection):
   Net_B_RH01_cmd_speed_cmd_rpm= SubSection(section=SectionProxy("Ploted_values"), repeats = False)
   undefined_data=SubSection(section=SectionProxy("Ploted_values"), repeats = True)
 
-
 class Undefined_data(ArchiveSection):
+  data=SubSection(section=SectionProxy("Ploted_values"), repeats = True)
+  start_time=Quantity(type=np.float64)
+  end_time=Quantity(type=np.float64)
+
+class NomadCamelsDataHandler_data(ArchiveSection):
   data=SubSection(section=SectionProxy("Ploted_values"), repeats = True)
 
 
@@ -503,6 +511,7 @@ class Undefined_data(ArchiveSection):
 class NewSchemaPackage(ArchiveSection):
     #m_def=Section()
     #m_def = Section(label='New Schema Package')
+    nomadcamelsdatahandler_data=SubSection(section=SectionProxy("NomadCamelsDataHandler_data"),repeats= False)
     undef_data=SubSection(section=SectionProxy("Undefined_data"), repeats =False)
     mio_data = SubSection(section=SectionProxy("MIOData"), repeats =False)
     actif_data= SubSection(section=SectionProxy("ACTIFData"), repeats = False)
