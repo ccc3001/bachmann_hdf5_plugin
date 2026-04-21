@@ -216,40 +216,57 @@ class Ploted_values(PlotSection,ArchiveSection):
         return 0
         #self.append(self.generate_scan_plot())
       if not hasattr(self, 'time') or self.time is None or len(self.time)==0:
-        figure1= px.line(x=self.m_parent.m_parent.elapsed_time, y=self.data, title="")
-        self.figures.append(PlotlyFigure(label='figure', figure=figure1.to_plotly_json()))
+        fig=px.line(x=self.m_parent.m_parent.elapsed_time, y=self.data, title="")
+        html =fig.to_html(include_plotlyjs="cdn")
+        self.figures.append(PlotlyFigure(label="",figure=html))
+        #figure1= px.line(x=self.m_parent.m_parent.elapsed_time, y=self.data, title="",render_mode="svg")
+        #self.figures.append(PlotlyFigure(label='figure', figure=figure1.to_plotly_json()))
       else:
-        figure1= px.line(x=self.time-self.m_parent.start_time, y=self.data, title="")
-        self.figures.append(PlotlyFigure(label='figure', figure=figure1.to_plotly_json()))
+        fig = go.Figure()
+
+        x = np.array(self.time - self.m_parent.start_time).flatten()
+        y = np.array(self.data).flatten()
+
+        fig.add_trace(go.Scattergl(   # 👈 WebGL version (important!)
+            x=x,
+            y=y,
+            mode="lines",             # 👈 remove markers (huge speedup)
+
+            line=dict(width=2),
+
+            # 👇 lightweight hover (NO big text list)
+            hovertemplate="x=%{x:.2f}<br>y=%{y:.2f}<extra></extra>"
+        ))
+
+        fig.update_xaxes(fixedrange=False)
+        fig.update_yaxes(fixedrange=False)
+        fig.update_layout(
+            hovermode="closest",
+            dragmode="zoom",
+            title=""
+        )
+
+        fig.update_xaxes(
+            rangeslider=dict(visible=False)   # 👈 REMOVE slider
+        )
+
+        self.figures.append(
+            PlotlyFigure(
+                label="",
+                figure=fig.to_plotly_json()
+            )
+)
+
+
+        #figure1= px.line(x=self.time-self.m_parent.start_time, y=self.data, title="",render_mode="svg")
+        #self.figures.append(PlotlyFigure(label='figure', figure=figure1.to_plotly_json()))
       #try:
       #  figure2 = go.Figure()
       #  figure2.add_trace(go.Box( y=self.data, quartilemethod="linear", name=  "" ))
       #  self.figures.append(PlotlyFigure(label="figure2",figure = figure2.to_plotly_json()))
       #except NameError:
       #    print("variable namme wasnt defined")
-      """
-      m_def=Section(
-        a_plot={
-        'label': 'Pressure and Temperature vs Time',
-        'x': f'{self.m_parent.time}',
-        'y': './data',
-        'config': {'editable': False, 'scrollZoom': True}
-        },
-        a_table={
-        'columns': ['./data'],
-        'label': 'Measurement Table'
-        }
-      )
-      m_annotations={
-        "eln": {
-            "show": True,
-            "widgets": [
-                {"type": "DataTable", "label": "Table View"},
-                {"type": "PlotlyGraph", "label": "Graph View"}
-            ]
-        }
-    }
-    """
+
 
 class MIOData(ArchiveSection):
   TV_01_A_PWM_pwmDutyCycle= SubSection(section=SectionProxy("Ploted_values"), repeats = False)
@@ -563,6 +580,7 @@ class NewSchemaPackage(ArchiveSection):
         type= str,
         a_browser=dict(render_value ='HtmlValue')
     )
+
 
 
     def create_pdf(self):
