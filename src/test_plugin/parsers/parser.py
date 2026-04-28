@@ -86,7 +86,7 @@ class NewParser(MatchingParser):
         nomadcamelsdatahandler_data=schema.m_create(NomadCamelsDataHandler_data)
         with h5py.File(mainfile, "r") as f:
 
-            CAMELS_entry=list(f.keys())[0]
+            CAMELS_entry = next((x for x in list(f.keys()) if x.startswith("CAMELS_")), None)
 
             keys = [
                 "NomadCamelsDataHandler_var_lengths",
