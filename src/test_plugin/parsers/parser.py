@@ -86,7 +86,7 @@ class NewParser(MatchingParser):
         nomadcamelsdatahandler_data=schema.m_create(NomadCamelsDataHandler_data)
         with h5py.File(mainfile, "r") as f:
 
-            CAMELS_entry = next((x for x in list(f.keys()) if x.startswith("CAMELS_")), None)
+            CAMELS_entry=list(f.keys())[0]
 
             keys = [
                 "NomadCamelsDataHandler_var_lengths",
@@ -102,20 +102,21 @@ class NewParser(MatchingParser):
                 flat_values = group["NomadCamelsDataHandler_values_flat"][()]
                 var_names = group["NomadCamelsDataHandler_var_names"][()]
                 flat_timestamps = group["NomadCamelsDataHandler_timestamps_flat"][()]
-                raw_var_names = var_names[0].decode("utf-8")
-                var_names_parsed = ast.literal_eval(raw_var_names)
+                var_names_parsed = var_names[0]
                 counter=0
                 start_point=0
 
-                logger.info(len(var_names_parsed))
+                #logger.info(var_names_parsed)
 
                 for var_name in var_names_parsed:
+                    if isinstance(var_name, bytes):
+                        var_name = var_name.decode("utf-8")
                     match = re.search(r";s=(.*)", var_name)
                     if match is not None:
                         m = match.group(1)
                         m = m.split("/", 1)
                         m[1] = m[1].replace("/", "_")
-                    var_name=m[1]
+                        var_name=m[1]
 
                     if var_lengths[0, counter]>1 and any(c.isalpha() for c in var_name):
                         data_item = nomadcamelsdatahandler_data.m_create(
@@ -123,8 +124,8 @@ class NewParser(MatchingParser):
                             NomadCamelsDataHandler_data.data
                         )
 
-                        data_item.data=flat_values[0,start_point:(start_point-1+var_lengths[0,counter])]
-                        data_item.time=flat_timestamps[0,start_point:(start_point-1+var_lengths[0,counter])]
+                        data_item.data=flat_values[0,start_point:(start_point-1+int(var_lengths[0,counter]))]
+                        data_item.time=flat_timestamps[0,start_point:(start_point-1+int(var_lengths[0,counter]))]
                         data_item.name= var_name
                         if not hasattr(nomadcamelsdatahandler_data, 'start_time') or  nomadcamelsdatahandler_data.start_time is None or    nomadcamelsdatahandler_data.start_time >= data_item.time[0]:
 
@@ -132,7 +133,7 @@ class NewParser(MatchingParser):
                         if not hasattr(nomadcamelsdatahandler_data, 'end_time') or  nomadcamelsdatahandler_data.end_time is None or nomadcamelsdatahandler_data.start_time <= data_item.time[len(data_item.time)-1]:
                            nomadcamelsdatahandler_data.end_time= data_item.time[len(data_item.time)-1]
 
-                    start_point+=var_lengths[0,counter]
+                    start_point+=int(var_lengths[0,counter])
                     counter+=1
 
             if "NomadCamelsDataHandler_end_collection" in f[CAMELS_entry]["data"]:
