@@ -42,8 +42,11 @@ def find_group_with_keys(group, keys):
                 return result
     return None
 
+from nomad.datamodel.hdf5 import HDF5Reference
+
+
 def create_parsed_dataset(
-    h5file,
+    archive,
     values,
     start,
     length,
@@ -51,10 +54,11 @@ def create_parsed_dataset(
 ):
     data = values[start:start + length]
 
-    if dataset_path in h5file:
-        del h5file[dataset_path]
-
-    h5file.create_dataset(dataset_path, data=data)
+    HDF5Reference.write_dataset(
+        archive,
+        data,
+        dataset_path,
+    )
 
 class NewParser(MatchingParser):
 
@@ -85,8 +89,8 @@ class NewParser(MatchingParser):
         schema.date = datetime.today().strftime(
             '%Y-%m-%d'
         )
-
-        with h5py.File(mainfile, "r+") as f:
+        datasets_to_write = []
+        with h5py.File(mainfile, "r") as f:
 
             CAMELS_entry = list(f.keys())[0]
 
@@ -109,9 +113,10 @@ class NewParser(MatchingParser):
             if group is not None:
                 values_ds = group["NomadCamelsDataHandler_values_flat"][()]
                 times_ds = group["NomadCamelsDataHandler_timestamps_flat"][()]
-
-                logger.info(f"values dataset shape = {values_ds.shape}")
-                logger.info(f"times dataset shape = {times_ds.shape}")
+                logger.info(f"values_ds.shape = {values_ds.shape}")
+                logger.info(f"times_ds.shape = {times_ds.shape}")
+                logger.info(f"values_ds.dtype = {values_ds.dtype}")
+                logger.info(f"times_ds.dtype = {times_ds.dtype}")
 
                 # Normalize to a 1D array
                 if values_ds.ndim == 2:
@@ -123,40 +128,53 @@ class NewParser(MatchingParser):
                     all_times = times_ds[0]
                 else:
                     all_times = times_ds
-                var_lengths = group[
-                    "NomadCamelsDataHandler_var_lengths"
-                ][()]
+                var_lengths = group["NomadCamelsDataHandler_var_lengths"][()]
 
-                # Handle serialized list stored as bytes
-                if len(var_lengths) == 1 and isinstance(var_lengths[0], (bytes, str)):
-                    raw = var_lengths[0]
+                logger.info(f"var_lengths type = {type(var_lengths)}")
+                logger.info(f"var_lengths shape = {getattr(var_lengths, 'shape', None)}")
+
+
+                # Convert to a simple 1D integer array
+                if var_lengths.dtype.kind in ("S", "U", "O"):
+                    raw = var_lengths.reshape(-1)[0]
+
                     if isinstance(raw, bytes):
-                        raw = raw.decode("utf-8")
-                    var_lengths = ast.literal_eval(raw)
+                        raw = raw.decode()
 
+                    var_lengths = np.array(ast.literal_eval(raw), dtype=int)
 
-                var_names = group[
-                    "NomadCamelsDataHandler_var_names"
-                ][()]
+                else:
+                    var_lengths = np.asarray(var_lengths).reshape(-1).astype(int)
 
-                # Handle serialized list stored as bytes
-                if (
-                    len(var_names) == 1
-                    and isinstance(var_names[0], (bytes, str))
-                ):
-                    raw = var_names[0]
-                    if isinstance(raw, bytes):
-                        raw = raw.decode("utf-8")
-                    var_names = ast.literal_eval(raw)
+                logger.info(f"len(var_lengths) = {len(var_lengths)}")
+                logger.info(f"sum(var_lengths) = {var_lengths.sum()}")
+                var_names = group["NomadCamelsDataHandler_var_names"][()]
 
-                # Otherwise convert NumPy array to a Python list
-                elif isinstance(var_names, np.ndarray):
-                    var_names = var_names.tolist()
+                if var_names.dtype == object:
+                    var_names = var_names[0]
 
-                counter = 0
+                elif var_names.ndim == 2:
+                    var_names = var_names[0]
+
+                elif var_names.ndim == 1:
+                    pass
+
+                else:
+                    raise ValueError(
+                        f"Unsupported var_names shape: {var_names.shape}"
+                    )
+
+                var_names = [
+                    n.decode() if isinstance(n, bytes) else str(n)
+                    for n in var_names
+                ]
+
+                logger.info(f"len(var_names) = {len(var_names)}")
+                logger.info(f"first names = {var_names[:5]}")
+
                 start_point = 0
 
-                for var_name in var_names:
+                for counter, var_name in enumerate(var_names):
 
                     # Normalize to a Python string
                     if isinstance(var_name, bytes):
@@ -178,10 +196,33 @@ class NewParser(MatchingParser):
                         )
                         var_name = m[1]
 
-                    length = int(
-                        var_lengths[0,counter]
+                    if var_lengths.ndim == 1:
+                        length = int(var_lengths[counter])
+
+                    elif var_lengths.ndim == 2:
+                        length = int(var_lengths[0, counter])
+
+                    else:
+                        raise ValueError(
+                            f"Unsupported var_lengths shape: {var_lengths.shape}"
+                        )
+
+                    logger.info(
+                        f"{counter}: "
+                        f"name={var_name}, "
+                        f"start={start_point}, "
+                        f"length={length}, "
+                        f"end={start_point + length}"
+                    )
+                    logger.info(
+                        f"value slice length = "
+                        f"{len(all_values[start_point:start_point + length])}"
                     )
 
+                    logger.info(
+                        f"time slice length = "
+                        f"{len(all_times[start_point:start_point + length])}"
+                    )
                     if (
                         length > 1
                         and any(
@@ -203,44 +244,29 @@ class NewParser(MatchingParser):
                         # IMPORTANT FIX:
                         # point to sliced data, not full flat arrays
 
-                        data_item.slice_start = (
-                            start_point
-                        )
-
-                        data_item.slice_end = (
-                            start_point + length
-                        )
 
                         safe_name = re.sub(r"[^\w.-]", "_", var_name)
 
-                        values_path = f"/parsed/values/{safe_name}"
-                        time_path = f"/parsed/time/{safe_name}"
+                        group_path = f"/parsed/{safe_name}"
 
-                        create_parsed_dataset(
-                            f,
-                            all_values,
-                            start_point,
-                            length,
-                            values_path,
+                        values_path = f"{group_path}/values"
+                        time_path = f"{group_path}/time"
+
+                        datasets_to_write.append(
+                            {
+                                "values_path": values_path,
+                                "time_path": time_path,
+                                "values": all_values[start_point:start_point + length],
+                                "times": all_times[start_point:start_point + length],
+                            }
                         )
-
-                        create_parsed_dataset(
-                            f,
-                            all_times,
-                            start_point,
-                            length,
-                            time_path,
-                        )
-
-                        logger.info(f"{f[values_path].shape=}")
-                        logger.info(f"{f[time_path].shape=}")
-                        logger.info(f"{f[values_path].dtype=}")
-                        logger.info(f"{f[time_path].dtype=}")
                         data_item.data = f"{raw_name}#{values_path}"
                         data_item.time = f"{raw_name}#{time_path}"
                     start_point += length
-                    counter += 1
-
+            logger.info("===== FINAL CHECK =====")
+            logger.info(f"final start_point = {start_point}")
+            logger.info(f"len(all_values) = {len(all_values)}")
+            logger.info(f"len(all_times) = {len(all_times)}")
             # -------------------------
             # instrument datasets
             # -------------------------
@@ -356,7 +382,31 @@ class NewParser(MatchingParser):
                         f"could not create element "
                         f"for {key}: {e}"
                     )
+        for ds in datasets_to_write:
+            logger.info(f"Writing to {raw_name}#{ds['values_path']}")
+            logger.info(f"values shape = {ds['values'].shape}")
+            HDF5Reference.write_dataset(
+                archive,
+                ds["values"],
+                f"{raw_name}#{ds['values_path']}"
+            )
 
+            HDF5Reference.write_dataset(
+                archive,
+                ds["times"],
+                f"{raw_name}#{ds['time_path']}"
+            )
+        with h5py.File(mainfile, "r+") as f:
+
+            for ds in datasets_to_write:
+
+                group_path = os.path.dirname(ds["values_path"])
+
+                grp = f[group_path]
+
+                grp.attrs["NX_class"] = "NXdata"
+                grp.attrs["signal"] = "values"
+                grp.attrs["axes"] = "time"
         archive.data = schema
 
         logger.info(

@@ -26,7 +26,7 @@ class Ploted_values(ArchiveSection):
     m_def = Section(
         a_h5web=H5WebAnnotation(
             signal='data',
-            #axes=['time'],
+            axes=['time'],
         )
     )
 
@@ -78,11 +78,6 @@ class Undefined_data(ArchiveSection):
 
 class NomadCamelsDataHandler_data(ArchiveSection):
 
-    m_def = Section(
-        a_h5web=H5WebAnnotation(
-            paths=["data/*"]
-        )
-    )
 
     data = SubSection(
         section=SectionProxy("Ploted_values"),
