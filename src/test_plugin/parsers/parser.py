@@ -117,17 +117,29 @@ class NewParser(MatchingParser):
                 logger.info(f"times_ds.shape = {times_ds.shape}")
                 logger.info(f"values_ds.dtype = {values_ds.dtype}")
                 logger.info(f"times_ds.dtype = {times_ds.dtype}")
-
-                # Normalize to a 1D array
                 if values_ds.ndim == 2:
                     all_values = values_ds[0]
                 else:
                     all_values = values_ds
-
+                # Normalize to a 1D array
                 if times_ds.ndim == 2:
                     all_times = times_ds[0]
                 else:
                     all_times = times_ds
+
+                # Normalize timestamps
+                if all_times.dtype.kind in ("S", "U", "O"):
+                    raw = all_times.reshape(-1)[0]
+
+                    if isinstance(raw, bytes):
+                        raw = raw.decode()
+
+                    # Serialized list?
+                    if raw.startswith("["):
+                        all_times = np.array(ast.literal_eval(raw), dtype=np.float64)
+                    else:
+                        all_times = np.asarray(all_times, dtype=np.float64)
+
                 experiment_start = np.min(all_times)
                 var_lengths = group["NomadCamelsDataHandler_var_lengths"][()]
 
@@ -265,9 +277,20 @@ class NewParser(MatchingParser):
                         data_item.time = f"{raw_name}#{time_path}"
                     start_point += length
             logger.info("===== FINAL CHECK =====")
-            logger.info(f"final start_point = {start_point}")
-            logger.info(f"len(all_values) = {len(all_values)}")
-            logger.info(f"len(all_times) = {len(all_times)}")
+            if "start_point" in locals():
+                logger.info(f"final start_point = {start_point}")
+            else:
+                logger.info("start_point was never initialized")
+
+            if "all_values" in locals():
+                logger.info(f"len(all_values) = {len(all_values)}")
+            else:
+                logger.info("all_values was never initialized")
+
+            if "all_times" in locals():
+                logger.info(f"len(all_times) = {len(all_times)}")
+            else:
+                logger.info("start_point was never initialized")
             # -------------------------
             # instrument datasets
             # -------------------------
