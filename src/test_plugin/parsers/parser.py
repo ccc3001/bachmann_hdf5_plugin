@@ -128,6 +128,7 @@ class NewParser(MatchingParser):
                     all_times = times_ds[0]
                 else:
                     all_times = times_ds
+                experiment_start = np.min(all_times)
                 var_lengths = group["NomadCamelsDataHandler_var_lengths"][()]
 
                 logger.info(f"var_lengths type = {type(var_lengths)}")
@@ -257,7 +258,7 @@ class NewParser(MatchingParser):
                                 "values_path": values_path,
                                 "time_path": time_path,
                                 "values": all_values[start_point:start_point + length],
-                                "times": all_times[start_point:start_point + length],
+                                "times": all_times[start_point:start_point + length]-experiment_start,
                             }
                         )
                         data_item.data = f"{raw_name}#{values_path}"

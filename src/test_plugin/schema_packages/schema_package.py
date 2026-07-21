@@ -37,7 +37,9 @@ class Ploted_values(ArchiveSection):
     )
 
     time = Quantity(
-        type=HDF5Reference
+        type=HDF5Reference,
+        unit="s",
+
     )
 
 
